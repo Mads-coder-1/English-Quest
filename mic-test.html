@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<title>Mikrofon Test</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 500px; margin: 100px auto; text-align: center; background: #1a1a2e; color: white; }
+  h1 { font-size: 24px; margin-bottom: 30px; }
+  button { padding: 20px 40px; font-size: 18px; border-radius: 12px; border: none; background: #00d4ff; color: black; cursor: pointer; margin: 10px; }
+  button:disabled { opacity: 0.4; }
+  #status { margin-top: 30px; font-size: 16px; min-height: 80px; background: #0f1623; border-radius: 10px; padding: 20px; }
+  #heard { margin-top: 20px; font-size: 20px; color: #00ff88; min-height: 40px; }
+</style>
+</head>
+<body>
+  <h1>🎤 Mikrofon Test</h1>
+  <p>Tryk knappen og sig noget på engelsk</p>
+  <button id="btn" onclick="startTest()">START LYTNING</button>
+  <div id="status">Klar til test...</div>
+  <div id="heard"></div>
+
+<script>
+function startTest() {
+  const btn = document.getElementById('btn');
+  const status = document.getElementById('status');
+  const heard = document.getElementById('heard');
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    status.textContent = '❌ Speech Recognition ikke understøttet i denne browser. Brug Chrome!';
+    return;
+  }
+
+  status.textContent = '⏳ Starter...';
+  heard.textContent = '';
+  btn.disabled = true;
+
+  window.speechSynthesis.cancel(); // Stop evt. TTS
+
+  setTimeout(() => {
+    const r = new SR();
+    r.lang = 'en-GB';
+    r.interimResults = true; // Vis løbende hvad der høres
+    r.maxAlternatives = 5;
+    r.continuous = false;
+
+    r.onstart = () => {
+      status.textContent = '🎤 LYTTER — sig noget på engelsk nu!';
+    };
+
+    r.onresult = (event) => {
+      const results = [];
+      for (let i = 0; i < event.results.length; i++) {
+        for (let j = 0; j < event.results[i].length; j++) {
+          results.push(event.results[i][j].transcript);
+        }
+      }
+      heard.textContent = '✓ Hørte: "' + results[0] + '"';
+      status.textContent = 'Alle alternativer: ' + results.join(' | ');
+    };
+
+    r.onerror = (e) => {
+      status.textContent = '❌ Fejl: ' + e.error;
+      btn.disabled = false;
+    };
+
+    r.onend = () => {
+      btn.disabled = false;
+      if (heard.textContent === '') {
+        status.textContent = '⚠️ Ingen lyd registreret. Prøv igen og tal tydeligt.';
+      } else {
+        status.textContent += ' [Færdig]';
+      }
+    };
+
+    r.start();
+  }, 300);
+}
+</script>
+</body>
+</html>
